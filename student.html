@@ -441,26 +441,54 @@ async function lookupWord(word, event) {
   }
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-6', max_tokens:1000,
-        system:`Bạn là từ điển Anh-Việt dành cho học sinh tiểu học tại Việt Nam. Trả về JSON thuần (không markdown, không backtick):
-{"phonetic":"phiên âm IPA","type":"danh từ/động từ/tính từ/...","meaning":"nghĩa tiếng Việt đơn giản nhất","example":"câu ví dụ tiếng Anh ngắn phù hợp trẻ em 6-12 tuổi"}`,
-        messages:[{role:'user', content:`Giải thích từ tiếng Anh: "${word}"`}]
-      })
-    });
+    // Xóa audio button cũ nếu có
+    const oldAudio = document.getElementById('pAudioBtn');
+    if (oldAudio) oldAudio.remove();
+    const oldLink = document.querySelector('#vocabPopup a');
+    if (oldLink) oldLink.remove();
+
+    const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
+    if (!res.ok) throw new Error('not found');
     const data = await res.json();
-    const text = data.content?.[0]?.text || '{}';
-    const d = JSON.parse(text.replace(/```json|```/g,'').trim());
-    currentPopupData = { word, phonetic:d.phonetic, word_type:d.type, meaning:d.meaning, example:d.example };
-    document.getElementById('pPhonetic').textContent = d.phonetic || '';
-    document.getElementById('pType').textContent = d.type || '';
-    document.getElementById('pMeaning').textContent = '🇻🇳 ' + (d.meaning || '');
-    document.getElementById('pExample').textContent = '📝 ' + (d.example || '');
+    const entry = data[0];
+
+    const phonetic = entry.phonetic || (entry.phonetics && entry.phonetics.find(p=>p.text) && entry.phonetics.find(p=>p.text).text) || '';
+    let wordType = '', meaning = '', example = '';
+    if (entry.meanings && entry.meanings.length) {
+      const m = entry.meanings[0];
+      wordType = m.partOfSpeech || '';
+      if (m.definitions && m.definitions.length) {
+        meaning = m.definitions[0].definition || '';
+        example = m.definitions[0].example || '';
+      }
+    }
+    const audioEntry = entry.phonetics && entry.phonetics.find(p=>p.audio);
+    const audioUrl = audioEntry ? audioEntry.audio : '';
+
+    currentPopupData = { word, phonetic, word_type: wordType, meaning, example };
+    document.getElementById('pPhonetic').textContent = phonetic;
+    document.getElementById('pType').textContent = wordType;
+    document.getElementById('pMeaning').textContent = meaning ? '📖 ' + meaning : '';
+    document.getElementById('pExample').textContent = example ? '📝 ' + example : '';
+
+    if (audioUrl) {
+      const ab = document.createElement('button');
+      ab.id = 'pAudioBtn';
+      ab.textContent = '🔊 Nghe phát âm';
+      ab.style = 'width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:13px;cursor:pointer;margin-bottom:6px;font-family:inherit';
+      ab.onclick = () => new Audio(audioUrl).play();
+      document.getElementById('pSaveBtn').before(ab);
+    }
+    const lk = document.createElement('a');
+    lk.href = 'https://dictionary.cambridge.org/dictionary/english/' + encodeURIComponent(word);
+    lk.target = '_blank';
+    lk.textContent = '🔗 Xem thêm trên Cambridge →';
+    lk.style = 'display:block;font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;text-decoration:none';
+    document.getElementById('pSaveBtn').after(lk);
+
   } catch(e) {
-    document.getElementById('pMeaning').textContent = 'Không thể tra. Thử lại!';
+    document.getElementById('pMeaning').textContent = '❌ Không tìm thấy từ này';
+    document.getElementById('pExample').textContent = '';
   }
 }
 
@@ -609,7 +637,7 @@ async function startQuiz() {
     const wordList = words.map(w=>w.word).join(', ');
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','x-api-key':'YOUR_CLAUDE_KEY','anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6', max_tokens:1000,
         system:`Tạo quiz từ vựng tiếng Anh cho học sinh tiểu học. Trả về JSON thuần (không markdown):
