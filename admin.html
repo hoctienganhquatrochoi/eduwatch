@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduWatch — Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1923;color:#fff;min-height:100vh}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:700}
+.nav-badge{background:rgba(230,57,70,0.3);color:#ff8a8a;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:600}
+.nav-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);font-size:12px;cursor:pointer;font-family:inherit}
+.nav-btn:hover{background:rgba(255,255,255,0.08)}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - 53px)}
+.sidenav{width:220px;padding:16px 12px;border-right:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.main{flex:1;padding:24px;overflow-y:auto}
+
+/* SIDENAV */
+.sn-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:4px;transition:all 0.15s;border:1px solid transparent}
+.sn-item:hover{background:rgba(255,255,255,0.05);color:#fff}
+.sn-item.active{background:rgba(230,57,70,0.15);border-color:rgba(230,57,70,0.3);color:#fff}
+.sn-icon{font-size:16px;width:20px;text-align:center}
+.sn-sep{margin:8px 0;border:none;border-top:1px solid rgba(255,255,255,0.06)}
+
+/* PAGE */
+.page{display:none}
+.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:600}
+.btn-add{padding:8px 18px;border-radius:10px;border:none;background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.15s}
+.btn-add:hover{opacity:0.85}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px}
+.stat-label{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:700}
+.stat-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px}
+
+/* TABLE */
+.table-wrap{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{padding:12px 16px;text-align:left;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:0.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02)}
+td{padding:12px 16px;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+
+/* BADGES */
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.badge-green{background:rgba(99,153,34,0.2);color:#97c459}
+.badge-red{background:rgba(230,57,70,0.2);color:#ff8a8a}
+.badge-blue{background:rgba(23,138,221,0.2);color:#85b7eb}
+.badge-gray{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5)}
+
+/* ACTION BUTTONS */
+.actions{display:flex;gap:6px}
+.btn-action{padding:5px 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.7);font-size:12px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.btn-action:hover{background:rgba(255,255,255,0.08)}
+.btn-action.danger:hover{background:rgba(230,57,70,0.15);border-color:rgba(230,57,70,0.3);color:#ff8a8a}
+.btn-action.primary:hover{background:rgba(23,138,221,0.15);border-color:rgba(23,138,221,0.3);color:#85b7eb}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:#1a2535;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.4);font-size:22px;cursor:pointer;line-height:1}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 13px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;font-size:14px;outline:none;font-family:inherit;transition:border-color 0.15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:rgba(230,57,70,0.5)}
+.form-group select option{background:#1a2535}
+.form-group textarea{resize:vertical;min-height:80px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.btn-cancel{padding:10px 20px;border-radius:9px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.6);font-size:14px;cursor:pointer;font-family:inherit}
+.btn-save{padding:10px 24px;border-radius:9px;border:none;background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-save:disabled{opacity:0.5;cursor:not-allowed}
+
+/* VIDEO STATUS */
+.yt-preview{width:80px;height:54px;border-radius:6px;object-fit:cover;background:#1a2a3a}
+.transcript-status{font-size:11px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:14px;z-index:300;transform:translateY(80px);opacity:0;transition:all 0.3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:rgba(99,153,34,0.9);color:#fff}
+.toast.error{background:rgba(230,57,70,0.9);color:#fff}
+
+/* ANALYTICS */
+.analytics-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.analytics-item:last-child{border-bottom:none}
+
+/* EMPTY */
+.empty-row td{text-align:center;padding:32px;color:rgba(255,255,255,0.3);font-size:14px}
+
+/* VIDEO LOADING */
+.yt-loading{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.5)}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div style="display:flex;align-items:center">
+    <div class="nav-logo">🎬 EduWatch</div>
+    <span class="nav-badge">ADMIN</span>
+  </div>
+  <button class="nav-btn" onclick="logout()">Đăng xuất</button>
+</nav>
+
+<div class="layout">
+  <!-- SIDENAV -->
+  <div class="sidenav">
+    <div class="sn-item active" onclick="showPage('dashboard')"><span class="sn-icon">📊</span> Dashboard</div>
+    <div class="sn-item" onclick="showPage('students')"><span class="sn-icon">🎓</span> Học sinh</div>
+    <div class="sn-item" onclick="showPage('videos')"><span class="sn-icon">🎬</span> Video</div>
+    <div class="sn-item" onclick="showPage('analytics')"><span class="sn-icon">📈</span> Thống kê</div>
+    <hr class="sn-sep">
+    <div class="sn-item" onclick="showPage('settings')"><span class="sn-icon">⚙️</span> Cài đặt</div>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header"><div class="page-title">Tổng quan</div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Học sinh đang học</div><div class="stat-value" id="st-students">—</div></div>
+        <div class="stat-card"><div class="stat-label">Video đã thêm</div><div class="stat-value" id="st-videos">—</div></div>
+        <div class="stat-card"><div class="stat-label">Từ vựng đã tra</div><div class="stat-value" id="st-vocab">—</div></div>
+        <div class="stat-card"><div class="stat-label">Quiz đã làm</div><div class="stat-value" id="st-quizzes">—</div></div>
+      </div>
+      <div class="page-header" style="margin-top:8px"><div style="font-size:15px;font-weight:500">Hoạt động gần đây</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Học sinh</th><th>Video</th><th>Tiến độ</th><th>Thời gian</th></tr></thead>
+        <tbody id="recentActivity"><tr class="empty-row"><td colspan="4">Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="page-students" class="page">
+      <div class="page-header">
+        <div class="page-title">Quản lý học sinh</div>
+        <button class="btn-add" onclick="openStudentModal()">+ Thêm học sinh</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Họ tên</th><th>Username</th><th>Trình độ</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+        <tbody id="studentTable"><tr class="empty-row"><td colspan="6">Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- VIDEOS -->
+    <div id="page-videos" class="page">
+      <div class="page-header">
+        <div class="page-title">Quản lý video</div>
+        <button class="btn-add" onclick="openVideoModal()">+ Thêm video</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Video</th><th>Tiêu đề</th><th>Trình độ</th><th>Transcript</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="videoTable"><tr class="empty-row"><td colspan="6">Đang tải...</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="page-analytics" class="page">
+      <div class="page-header"><div class="page-title">Thống kê học tập</div></div>
+      <div class="stats-grid" id="analyticsStats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+        <div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:12px">Top từ vựng được tra nhiều nhất</div>
+          <div class="table-wrap" style="padding:16px" id="topWords">Đang tải...</div>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:12px">Học sinh tích cực nhất</div>
+          <div class="table-wrap" style="padding:16px" id="topStudents">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <div class="page-header"><div class="page-title">Cài đặt</div></div>
+      <div style="max-width:480px">
+        <div class="table-wrap" style="padding:24px">
+          <div style="font-size:15px;font-weight:500;margin-bottom:16px">🔒 Đổi mật khẩu Admin</div>
+          <div class="form-group"><label>MẬT KHẨU HIỆN TẠI</label><input type="password" id="currPass" placeholder="Nhập mật khẩu hiện tại..."></div>
+          <div class="form-group"><label>MẬT KHẨU MỚI</label><input type="password" id="newPass" placeholder="Nhập mật khẩu mới..."></div>
+          <div class="form-group"><label>XÁC NHẬN MẬT KHẨU MỚI</label><input type="password" id="confPass" placeholder="Nhập lại mật khẩu mới..."></div>
+          <button class="btn-add" onclick="changePassword()">Đổi mật khẩu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT MODAL -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="stuModalTitle">Thêm học sinh</span>
+      <button class="modal-close" onclick="closeModal('studentModal')">×</button>
+    </div>
+    <div class="form-group"><label>HỌ VÀ TÊN *</label><input id="stuFullName" placeholder="Nguyễn Văn A..."></div>
+    <div class="form-group"><label>TÊN ĐĂNG NHẬP *</label><input id="stuUsername" placeholder="vanA123..."></div>
+    <div class="form-group"><label>MẬT KHẨU *</label><input type="password" id="stuPassword" placeholder="Tối thiểu 4 ký tự..."></div>
+    <div class="form-group"><label>TRÌNH ĐỘ</label>
+      <select id="stuLevel">
+        <option value="beginner">Beginner (Starters)</option>
+        <option value="elementary">Elementary (Movers)</option>
+        <option value="intermediate">Intermediate (Flyers)</option>
+      </select>
+    </div>
+    <input type="hidden" id="stuEditId">
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('studentModal')">Hủy</button>
+      <button class="btn-save" id="stuSaveBtn" onclick="saveStudent()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div class="modal-overlay" id="videoModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="vidModalTitle">Thêm video</span>
+      <button class="modal-close" onclick="closeModal('videoModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label>LINK YOUTUBE *</label>
+      <input id="vidUrl" placeholder="https://www.youtube.com/watch?v=..." oninput="previewYt(this.value)">
+    </div>
+    <div id="ytPreviewWrap" style="display:none;margin-bottom:14px;padding:12px;background:rgba(255,255,255,0.04);border-radius:10px">
+      <img id="ytPreviewImg" style="width:120px;height:80px;border-radius:8px;object-fit:cover;float:left;margin-right:12px">
+      <div id="ytPreviewTitle" style="font-size:13px;color:rgba(255,255,255,0.7)">Đang tải thông tin...</div>
+      <div style="clear:both"></div>
+    </div>
+    <div class="form-group"><label>TIÊU ĐỀ *</label><input id="vidTitle" placeholder="Tên video..."></div>
+    <div class="form-group"><label>TRÌNH ĐỘ</label>
+      <select id="vidLevel">
+        <option value="all">Tất cả</option>
+        <option value="beginner">Beginner</option>
+        <option value="elementary">Elementary</option>
+        <option value="intermediate">Intermediate</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>TRANSCRIPT (JSON) — <span style="font-weight:400;color:rgba(255,255,255,0.4)">tự động hoặc nhập thủ công</span></label>
+      <div style="margin-bottom:8px">
+        <button class="btn-action primary" onclick="fetchTranscript()" id="fetchBtn">⟳ Tự động lấy transcript</button>
+        <span id="fetchStatus" style="font-size:12px;color:rgba(255,255,255,0.4);margin-left:8px"></span>
+      </div>
+      <textarea id="vidTranscript" rows="5" placeholder='[{"start":0,"en":"Hello everyone","vi":"Xin chào mọi người"},...]'></textarea>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px">Format: [{start: giây, en: "câu tiếng Anh", vi: "dịch tiếng Việt"}, ...]</div>
+    </div>
+    <input type="hidden" id="vidEditId">
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('videoModal')">Hủy</button>
+      <button class="btn-save" id="vidSaveBtn" onclick="saveVideo()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const SUPABASE_URL = 'https://ybqbweywgkbfidhlcjeh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicWJ3ZXl3Z2tiZmlkaGxjamVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTU3OTAsImV4cCI6MjA5NjM5MTc5MH0.DD1sJjgbIv82fgLk3SPxpGDg7ENo9jPO0nD63UVKN9g';
+
+// ─── AUTH CHECK ───────────────────────────────────────────
+if (localStorage.getItem('ew_role') !== 'admin') window.location.href = 'eduwatch.html';
+function logout() { localStorage.removeItem('ew_role'); window.location.href = 'eduwatch.html'; }
+
+// ─── SUPABASE ─────────────────────────────────────────────
+async function sb(table, method='GET', body=null, query='') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+    method, headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST'?'return=representation':method==='PATCH'?'return=representation':''
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sn-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.sn-item').forEach(s => { if (s.textContent.trim().toLowerCase().includes(name==='dashboard'?'dashboard':name==='students'?'học sinh':name==='videos'?'video':name==='analytics'?'thống kê':'cài đặt')) s.classList.add('active'); });
+  if (name==='dashboard') loadDashboard();
+  if (name==='students') loadStudents();
+  if (name==='videos') loadVideos();
+  if (name==='analytics') loadAnalytics();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [students, videos, vocab, quizzes, history] = await Promise.all([
+      sb('students','GET',null,'?active=eq.true&select=id'),
+      sb('videos','GET',null,'?active=eq.true&select=id'),
+      sb('vocab_saves','GET',null,'?select=id'),
+      sb('quiz_results','GET',null,'?select=id'),
+      sb('watch_history','GET',null,'?order=last_watched.desc&limit=10&select=*,students(full_name),videos(title)')
+    ]);
+    document.getElementById('st-students').textContent = students?.length || 0;
+    document.getElementById('st-videos').textContent = videos?.length || 0;
+    document.getElementById('st-vocab').textContent = vocab?.length || 0;
+    document.getElementById('st-quizzes').textContent = quizzes?.length || 0;
+    renderRecentActivity(history || []);
+  } catch(e) { console.error(e); }
+}
+
+function renderRecentActivity(data) {
+  const el = document.getElementById('recentActivity');
+  if (!data.length) { el.innerHTML = '<tr class="empty-row"><td colspan="4">Chưa có hoạt động</td></tr>'; return; }
+  el.innerHTML = data.map(h => `
+    <tr>
+      <td>${h.students?.full_name || '—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.videos?.title || '—'}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px"><div style="height:100%;width:${h.progress_pct}%;background:#e63946;border-radius:3px"></div></div><span style="font-size:12px;color:rgba(255,255,255,0.4)">${h.progress_pct}%</span></div></td>
+      <td style="color:rgba(255,255,255,0.4);font-size:12px">${fmtDate(h.last_watched)}</td>
+    </tr>
+  `).join('');
+}
+
+// ─── STUDENTS ─────────────────────────────────────────────
+let allStudents = [];
+async function loadStudents() {
+  try {
+    allStudents = await sb('students','GET',null,'?order=created_at.desc') || [];
+    renderStudentTable(allStudents);
+  } catch(e) { document.getElementById('studentTable').innerHTML = '<tr class="empty-row"><td colspan="6">Lỗi tải dữ liệu</td></tr>'; }
+}
+
+function renderStudentTable(students) {
+  const el = document.getElementById('studentTable');
+  if (!students.length) { el.innerHTML = '<tr class="empty-row"><td colspan="6">Chưa có học sinh nào</td></tr>'; return; }
+  el.innerHTML = students.map(s => `
+    <tr>
+      <td style="font-weight:500">${s.full_name}</td>
+      <td style="color:rgba(255,255,255,0.6);font-family:monospace">${s.username}</td>
+      <td><span class="badge badge-blue">${lvlLabel(s.level)}</span></td>
+      <td><span class="badge ${s.active?'badge-green':'badge-red'}">${s.active?'Đang học':'Dừng học'}</span></td>
+      <td style="color:rgba(255,255,255,0.4);font-size:12px">${fmtDate(s.created_at)}</td>
+      <td>
+        <div class="actions">
+          <button class="btn-action primary" onclick="editStudent(${JSON.stringify(s).replace(/"/g,'&quot;')})">Sửa</button>
+          <button class="btn-action" onclick="toggleStudent('${s.id}',${s.active})">${s.active?'Dừng':'Kích hoạt'}</button>
+          <button class="btn-action danger" onclick="deleteStudent('${s.id}','${s.full_name}')">Xóa</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openStudentModal(edit=false) {
+  if (!edit) {
+    document.getElementById('stuModalTitle').textContent = 'Thêm học sinh';
+    document.getElementById('stuFullName').value = '';
+    document.getElementById('stuUsername').value = '';
+    document.getElementById('stuPassword').value = '';
+    document.getElementById('stuLevel').value = 'beginner';
+    document.getElementById('stuEditId').value = '';
+  }
+  document.getElementById('studentModal').classList.add('show');
+  setTimeout(() => document.getElementById('stuFullName').focus(), 100);
+}
+
+function editStudent(s) {
+  document.getElementById('stuModalTitle').textContent = 'Sửa học sinh';
+  document.getElementById('stuFullName').value = s.full_name;
+  document.getElementById('stuUsername').value = s.username;
+  document.getElementById('stuPassword').value = '';
+  document.getElementById('stuLevel').value = s.level || 'beginner';
+  document.getElementById('stuEditId').value = s.id;
+  document.getElementById('studentModal').classList.add('show');
+}
+
+async function saveStudent() {
+  const name = document.getElementById('stuFullName').value.trim();
+  const user = document.getElementById('stuUsername').value.trim();
+  const pass = document.getElementById('stuPassword').value.trim();
+  const level = document.getElementById('stuLevel').value;
+  const editId = document.getElementById('stuEditId').value;
+  if (!name || !user) { showToast('Vui lòng điền đầy đủ thông tin!','error'); return; }
+  if (!editId && !pass) { showToast('Cần nhập mật khẩu!','error'); return; }
+  const btn = document.getElementById('stuSaveBtn');
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+  try {
+    if (editId) {
+      const body = { full_name:name, username:user, level };
+      if (pass) body.password = pass;
+      await sb('students','PATCH',body,`?id=eq.${editId}`);
+    } else {
+      await sb('students','POST',{ full_name:name, username:user, password:pass, level });
+    }
+    closeModal('studentModal');
+    loadStudents();
+    showToast(editId?'Đã cập nhật học sinh!':'Đã thêm học sinh mới!','success');
+  } catch(e) {
+    const msg = e.message.includes('unique') ? 'Username đã tồn tại!' : 'Lỗi lưu dữ liệu!';
+    showToast(msg,'error');
+  }
+  finally { btn.disabled=false; btn.textContent='Lưu'; }
+}
+
+async function toggleStudent(id, active) {
+  try {
+    await sb('students','PATCH',{active:!active},`?id=eq.${id}`);
+    loadStudents();
+    showToast(active?'Đã dừng tài khoản học sinh':'Đã kích hoạt lại tài khoản','success');
+  } catch { showToast('Lỗi!','error'); }
+}
+
+async function deleteStudent(id, name) {
+  if (!confirm(`Xóa học sinh "${name}"?\n\nToàn bộ dữ liệu học tập của học sinh này sẽ bị xóa!`)) return;
+  try {
+    await sb('students','DELETE',null,`?id=eq.${id}`);
+    loadStudents();
+    showToast('Đã xóa học sinh!','success');
+  } catch { showToast('Lỗi xóa!','error'); }
+}
+
+// ─── VIDEOS ───────────────────────────────────────────────
+let allVideos = [];
+async function loadVideos() {
+  try {
+    allVideos = await sb('videos','GET',null,'?order=added_at.desc') || [];
+    renderVideoTable(allVideos);
+  } catch { document.getElementById('videoTable').innerHTML = '<tr class="empty-row"><td colspan="6">Lỗi tải dữ liệu</td></tr>'; }
+}
+
+function renderVideoTable(videos) {
+  const el = document.getElementById('videoTable');
+  if (!videos.length) { el.innerHTML = '<tr class="empty-row"><td colspan="6">Chưa có video nào</td></tr>'; return; }
+  el.innerHTML = videos.map(v => {
+    const hasT = v.transcript_json && v.transcript_json.length > 0;
+    return `<tr>
+      <td><img class="yt-preview" src="https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg" alt=""></td>
+      <td style="font-weight:500;max-width:200px">${v.title}</td>
+      <td><span class="badge badge-blue">${v.level||'all'}</span></td>
+      <td><span class="badge ${hasT?'badge-green':'badge-red'}">${hasT?'✓ Có transcript':'✗ Chưa có'}</span></td>
+      <td><span class="badge ${v.active?'badge-green':'badge-gray'}">${v.active?'Hiển thị':'Ẩn'}</span></td>
+      <td>
+        <div class="actions">
+          <button class="btn-action primary" onclick="editVideo(${JSON.stringify(v).replace(/"/g,'&quot;')})">Sửa</button>
+          <button class="btn-action" onclick="toggleVideo('${v.id}',${v.active})">${v.active?'Ẩn':'Hiện'}</button>
+          <button class="btn-action danger" onclick="deleteVideo('${v.id}','${v.title.replace(/'/g,"\\'")}')">Xóa</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openVideoModal() {
+  document.getElementById('vidModalTitle').textContent = 'Thêm video';
+  document.getElementById('vidUrl').value = '';
+  document.getElementById('vidTitle').value = '';
+  document.getElementById('vidLevel').value = 'all';
+  document.getElementById('vidTranscript').value = '';
+  document.getElementById('vidEditId').value = '';
+  document.getElementById('ytPreviewWrap').style.display = 'none';
+  document.getElementById('fetchStatus').textContent = '';
+  document.getElementById('videoModal').classList.add('show');
+  setTimeout(() => document.getElementById('vidUrl').focus(), 100);
+}
+
+function editVideo(v) {
+  document.getElementById('vidModalTitle').textContent = 'Sửa video';
+  document.getElementById('vidUrl').value = 'https://www.youtube.com/watch?v='+v.youtube_id;
+  document.getElementById('vidTitle').value = v.title;
+  document.getElementById('vidLevel').value = v.level || 'all';
+  document.getElementById('vidTranscript').value = v.transcript_json ? JSON.stringify(v.transcript_json, null, 2) : '';
+  document.getElementById('vidEditId').value = v.id;
+  document.getElementById('ytPreviewWrap').style.display = 'flex';
+  document.getElementById('ytPreviewImg').src = `https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg`;
+  document.getElementById('ytPreviewTitle').textContent = v.title;
+  document.getElementById('fetchStatus').textContent = '';
+  document.getElementById('videoModal').classList.add('show');
+}
+
+function extractYtId(url) {
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function previewYt(url) {
+  const id = extractYtId(url);
+  if (!id) { document.getElementById('ytPreviewWrap').style.display='none'; return; }
+  document.getElementById('ytPreviewImg').src = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+  document.getElementById('ytPreviewTitle').textContent = 'YouTube: ' + id;
+  document.getElementById('ytPreviewWrap').style.display = 'block';
+  if (!document.getElementById('vidTitle').value) document.getElementById('vidTitle').value = 'Video ' + id;
+}
+
+async function fetchTranscript() {
+  const url = document.getElementById('vidUrl').value.trim();
+  const id = extractYtId(url);
+  if (!id) { showToast('Nhập link YouTube trước!','error'); return; }
+  const btn = document.getElementById('fetchBtn');
+  const status = document.getElementById('fetchStatus');
+  btn.disabled = true; btn.textContent = '⟳ Đang lấy...';
+  status.textContent = 'Đang kết nối...';
+
+  try {
+    // Use youtubetranscript.com as proxy
+    const res = await fetch(`https://youtubetranscript.com/?server_vid2=${id}`);
+    const text = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/html');
+    const items = doc.querySelectorAll('transcript-line, [data-start]');
+
+    let transcript = [];
+    if (items.length > 0) {
+      items.forEach(item => {
+        const start = parseFloat(item.getAttribute('data-start') || item.getAttribute('start') || 0);
+        const en = (item.textContent || item.getAttribute('text') || '').trim().replace(/\n/g,' ');
+        if (en) transcript.push({ start: Math.round(start*10)/10, en, vi: '' });
+      });
+    }
+
+    if (!transcript.length) {
+      // Fallback: try to parse XML-style
+      const xmlMatch = text.match(/<transcript>([\s\S]*?)<\/transcript>/);
+      if (xmlMatch) {
+        const lines = xmlMatch[1].match(/<text[^>]*start="([\d.]+)"[^>]*>(.*?)<\/text>/g) || [];
+        lines.forEach(line => {
+          const startM = line.match(/start="([\d.]+)"/);
+          const textM = line.match(/>(.*?)<\/text>/);
+          if (startM && textM) {
+            const en = textM[1].replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&quot;/g,'"').trim();
+            transcript.push({ start: parseFloat(startM[1]), en, vi: '' });
+          }
+        });
+      }
+    }
+
+    if (transcript.length > 0) {
+      // Auto-translate with Claude
+      status.textContent = `Lấy được ${transcript.length} dòng. Đang dịch sang tiếng Việt...`;
+      transcript = await autoTranslate(transcript);
+      document.getElementById('vidTranscript').value = JSON.stringify(transcript, null, 2);
+      status.textContent = `✅ Xong! ${transcript.length} dòng sub`;
+      showToast('Lấy transcript thành công!','success');
+    } else {
+      status.textContent = '⚠️ Không tìm thấy sub tự động. Hãy nhập thủ công.';
+    }
+  } catch(e) {
+    status.textContent = '❌ Lỗi lấy transcript. Nhập thủ công hoặc thử video khác.';
+  }
+  btn.disabled = false; btn.textContent = '⟳ Tự động lấy transcript';
+}
+
+async function autoTranslate(transcript) {
+  // Translate in batches of 20
+  const batchSize = 20;
+  const result = [...transcript];
+  for (let i=0; i<transcript.length; i+=batchSize) {
+    const batch = transcript.slice(i, i+batchSize);
+    const lines = batch.map((l,j) => `${j}: ${l.en}`).join('\n');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model:'claude-sonnet-4-6', max_tokens:1000,
+          system:'Dịch các câu tiếng Anh sang tiếng Việt đơn giản cho học sinh tiểu học. Trả về JSON thuần: {"0":"dịch câu 0","1":"dịch câu 1",...}',
+          messages:[{role:'user', content:`Dịch:\n${lines}`}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text||'{}';
+      const viMap = JSON.parse(text.replace(/```json|```/g,'').trim());
+      batch.forEach((_,j) => { if (viMap[j] !== undefined) result[i+j].vi = viMap[j]; });
+    } catch {}
+  }
+  return result;
+}
+
+async function saveVideo() {
+  const url = document.getElementById('vidUrl').value.trim();
+  const title = document.getElementById('vidTitle').value.trim();
+  const level = document.getElementById('vidLevel').value;
+  const tJson = document.getElementById('vidTranscript').value.trim();
+  const editId = document.getElementById('vidEditId').value;
+  const ytId = extractYtId(url);
+  if (!ytId) { showToast('Link YouTube không hợp lệ!','error'); return; }
+  if (!title) { showToast('Nhập tiêu đề video!','error'); return; }
+  let transcript_json = null;
+  if (tJson) {
+    try { transcript_json = JSON.parse(tJson); }
+    catch { showToast('Transcript JSON không hợp lệ!','error'); return; }
+  }
+  const btn = document.getElementById('vidSaveBtn');
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+  try {
+    const body = { youtube_id:ytId, title, level, transcript_json, thumbnail:`https://img.youtube.com/vi/${ytId}/mqdefault.jpg` };
+    if (editId) { await sb('videos','PATCH',body,`?id=eq.${editId}`); }
+    else { await sb('videos','POST',body); }
+    closeModal('videoModal');
+    loadVideos();
+    showToast(editId?'Đã cập nhật video!':'Đã thêm video mới!','success');
+  } catch(e) {
+    const msg = e.message.includes('unique') ? 'Video này đã tồn tại!' : 'Lỗi lưu!';
+    showToast(msg,'error');
+  }
+  finally { btn.disabled=false; btn.textContent='Lưu'; }
+}
+
+async function toggleVideo(id, active) {
+  try {
+    await sb('videos','PATCH',{active:!active},`?id=eq.${id}`);
+    loadVideos();
+    showToast(active?'Đã ẩn video':'Đã hiện video','success');
+  } catch { showToast('Lỗi!','error'); }
+}
+
+async function deleteVideo(id, title) {
+  if (!confirm(`Xóa video "${title}"?`)) return;
+  try {
+    await sb('videos','DELETE',null,`?id=eq.${id}`);
+    loadVideos();
+    showToast('Đã xóa video!','success');
+  } catch { showToast('Lỗi xóa!','error'); }
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────
+async function loadAnalytics() {
+  try {
+    const [vocab, quizzes, history] = await Promise.all([
+      sb('vocab_saves','GET',null,'?select=word,students(full_name)&order=saved_at.desc'),
+      sb('quiz_results','GET',null,'?select=score,total,students(full_name)'),
+      sb('watch_history','GET',null,'?select=student_id,progress_pct,completed')
+    ]);
+
+    const completed = (history||[]).filter(h=>h.completed).length;
+    const avgScore = quizzes?.length ? Math.round(quizzes.reduce((a,q)=>a+q.score/q.total*100,0)/quizzes.length) : 0;
+
+    document.getElementById('analyticsStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Tổng từ đã tra</div><div class="stat-value">${vocab?.length||0}</div></div>
+      <div class="stat-card"><div class="stat-label">Video đã hoàn thành</div><div class="stat-value">${completed}</div></div>
+      <div class="stat-card"><div class="stat-label">Điểm quiz TB</div><div class="stat-value">${avgScore}%</div></div>
+      <div class="stat-card"><div class="stat-label">Tổng quiz đã làm</div><div class="stat-value">${quizzes?.length||0}</div></div>
+    `;
+
+    // Top words
+    const wordCount = {};
+    (vocab||[]).forEach(v => { wordCount[v.word] = (wordCount[v.word]||0)+1; });
+    const topW = Object.entries(wordCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    document.getElementById('topWords').innerHTML = topW.length ? topW.map(([w,c])=>`
+      <div class="analytics-item"><span style="font-size:14px">${w}</span><span class="badge badge-blue">${c} lần</span></div>
+    `).join('') : '<div style="color:rgba(255,255,255,0.3);font-size:13px">Chưa có dữ liệu</div>';
+
+    // Top students by vocab
+    const stuVocab = {};
+    (vocab||[]).forEach(v => {
+      const n = v.students?.full_name||'?';
+      stuVocab[n] = (stuVocab[n]||0)+1;
+    });
+    const topS = Object.entries(stuVocab).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    document.getElementById('topStudents').innerHTML = topS.length ? topS.map(([n,c])=>`
+      <div class="analytics-item"><span style="font-size:14px">${n}</span><span class="badge badge-green">${c} từ</span></div>
+    `).join('') : '<div style="color:rgba(255,255,255,0.3);font-size:13px">Chưa có dữ liệu</div>';
+
+  } catch(e) { console.error(e); }
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────
+async function changePassword() {
+  const curr = document.getElementById('currPass').value;
+  const nw = document.getElementById('newPass').value;
+  const conf = document.getElementById('confPass').value;
+  if (!curr||!nw||!conf) { showToast('Điền đầy đủ!','error'); return; }
+  if (nw !== conf) { showToast('Mật khẩu mới không khớp!','error'); return; }
+  if (nw.length < 4) { showToast('Mật khẩu tối thiểu 4 ký tự!','error'); return; }
+  try {
+    const data = await sb('app_settings','GET',null,'?key=eq.admin_password');
+    if (data?.[0]?.value !== curr) { showToast('Mật khẩu hiện tại sai!','error'); return; }
+    await sb('app_settings','PATCH',{value:nw},'?key=eq.admin_password');
+    document.getElementById('currPass').value=''; document.getElementById('newPass').value=''; document.getElementById('confPass').value='';
+    showToast('Đổi mật khẩu thành công!','success');
+  } catch { showToast('Lỗi!','error'); }
+}
+
+// ─── HELPERS ──────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function lvlLabel(l) { return l==='beginner'?'Beginner':l==='elementary'?'Elementary':l==='intermediate'?'Intermediate':'All'; }
+function fmtDate(d) { if(!d) return '—'; const dt=new Date(d); return dt.toLocaleDateString('vi-VN'); }
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className='toast', 3000);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('show'); });
+});
+
+// ─── INIT ─────────────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>

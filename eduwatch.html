@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduWatch — English Learning Platform</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1923;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .bg-anim {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, #1a3a5c 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, #2d1b4e 0%, transparent 50%),
+                radial-gradient(ellipse at 60% 80%, #0d2e1f 0%, transparent 50%);
+  }
+  .card {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    width: 100%; max-width: 420px;
+    backdrop-filter: blur(20px);
+  }
+  .logo { text-align: center; margin-bottom: 2rem; }
+  .logo-icon {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: linear-gradient(135deg, #e63946, #ff6b6b);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px; margin-bottom: 12px;
+  }
+  .logo h1 { color: #fff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo p { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 4px; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .tab {
+    flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: rgba(255,255,255,0.5); font-size: 14px;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .tab.active { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+
+  .form-group { margin-bottom: 1rem; }
+  label { display: block; color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 6px; letter-spacing: 0.5px; }
+  input {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06); color: #fff; font-size: 15px;
+    outline: none; transition: border-color 0.2s; font-family: inherit;
+  }
+  input::placeholder { color: rgba(255,255,255,0.25); }
+  input:focus { border-color: rgba(230,57,70,0.6); background: rgba(255,255,255,0.08); }
+
+  .btn {
+    width: 100%; padding: 13px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #e63946, #c1121f);
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s; margin-top: 0.5rem;
+    font-family: inherit;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error {
+    background: rgba(230,57,70,0.15); border: 1px solid rgba(230,57,70,0.3);
+    color: #ff8a8a; padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; margin-top: 0.75rem; display: none;
+  }
+  .error.show { display: block; }
+
+  .footer { text-align: center; margin-top: 1.5rem; color: rgba(255,255,255,0.25); font-size: 12px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+</style>
+</head>
+<body>
+<div class="bg-anim"></div>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">🎬</div>
+    <h1>EduWatch</h1>
+    <p>English Learning Platform</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('student')">🎓 Học sinh</button>
+    <button class="tab" onclick="switchTab('admin')">⚙️ Admin</button>
+  </div>
+
+  <!-- Student Login -->
+  <div id="studentPanel" class="panel active">
+    <div class="form-group">
+      <label>TÊN ĐĂNG NHẬP</label>
+      <input id="stuUser" type="text" placeholder="Nhập username..." autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>MẬT KHẨU</label>
+      <input id="stuPass" type="password" placeholder="Nhập mật khẩu..." />
+    </div>
+    <button class="btn" id="stuBtn" onclick="loginStudent()">Đăng nhập</button>
+    <div class="error" id="stuErr"></div>
+  </div>
+
+  <!-- Admin Login -->
+  <div id="adminPanel" class="panel">
+    <div class="form-group">
+      <label>MẬT KHẨU ADMIN</label>
+      <input id="adminPass" type="password" placeholder="Nhập mật khẩu admin..." />
+    </div>
+    <button class="btn" id="adminBtn" onclick="loginAdmin()">Đăng nhập Admin</button>
+    <div class="error" id="adminErr"></div>
+  </div>
+
+  <div class="footer">English for Kids — Học qua Trò Chơi</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ybqbweywgkbfidhlcjeh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicWJ3ZXl3Z2tiZmlkaGxjamVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTU3OTAsImV4cCI6MjA5NjM5MTc5MH0.DD1sJjgbIv82fgLk3SPxpGDg7ENo9jPO0nD63UVKN9g';
+
+async function sb(table, method='GET', body=null, query='') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (tab==='student'&&i===0)||(tab==='admin'&&i===1)));
+  document.getElementById('studentPanel').classList.toggle('active', tab==='student');
+  document.getElementById('adminPanel').classList.toggle('active', tab==='admin');
+}
+
+async function loginStudent() {
+  const user = document.getElementById('stuUser').value.trim();
+  const pass = document.getElementById('stuPass').value.trim();
+  const err = document.getElementById('stuErr');
+  const btn = document.getElementById('stuBtn');
+  if (!user || !pass) { showErr(err, 'Vui lòng nhập đầy đủ thông tin!'); return; }
+  btn.disabled = true; btn.textContent = 'Đang đăng nhập...';
+  try {
+    const data = await sb('students', 'GET', null, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&active=eq.true&select=id,full_name,username`);
+    if (!data || data.length === 0) { showErr(err, 'Sai tên đăng nhập hoặc mật khẩu!'); return; }
+    const student = data[0];
+    localStorage.setItem('ew_student', JSON.stringify(student));
+    localStorage.setItem('ew_role', 'student');
+    window.location.href = 'student.html';
+  } catch(e) { showErr(err, 'Lỗi kết nối. Thử lại!'); }
+  finally { btn.disabled = false; btn.textContent = 'Đăng nhập'; }
+}
+
+async function loginAdmin() {
+  const pass = document.getElementById('adminPass').value.trim();
+  const err = document.getElementById('adminErr');
+  const btn = document.getElementById('adminBtn');
+  if (!pass) { showErr(err, 'Nhập mật khẩu admin!'); return; }
+  btn.disabled = true; btn.textContent = 'Đang kiểm tra...';
+  try {
+    const data = await sb('app_settings', 'GET', null, `?key=eq.admin_password`);
+    if (!data || data[0]?.value !== pass) { showErr(err, 'Mật khẩu admin không đúng!'); return; }
+    localStorage.setItem('ew_role', 'admin');
+    window.location.href = 'admin.html';
+  } catch(e) { showErr(err, 'Lỗi kết nối. Thử lại!'); }
+  finally { btn.disabled = false; btn.textContent = 'Đăng nhập Admin'; }
+}
+
+function showErr(el, msg) { el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 4000); }
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') { document.querySelector('.panel.active .btn').click(); } });
+
+// Auto redirect if already logged in
+if (localStorage.getItem('ew_role') === 'student') window.location.href = 'student.html';
+if (localStorage.getItem('ew_role') === 'admin') window.location.href = 'admin.html';
+</script>
+</body>
+</html>

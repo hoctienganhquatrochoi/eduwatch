@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduWatch — Học sinh</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1923;color:#fff;min-height:100vh}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-student{font-size:13px;color:rgba(255,255,255,0.6)}
+.nav-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);font-size:12px;cursor:pointer;font-family:inherit}
+.nav-btn:hover{background:rgba(255,255,255,0.08)}
+.nav-btn.active{background:rgba(230,57,70,0.2);border-color:rgba(230,57,70,0.4);color:#ff8a8a}
+
+/* MAIN LAYOUT */
+.main{display:flex;height:calc(100vh - 53px)}
+.sidebar{width:300px;min-width:260px;border-right:1px solid rgba(255,255,255,0.08);overflow-y:auto;padding:16px}
+.content{flex:1;overflow-y:auto;padding:0}
+
+/* VIDEO LIST */
+.sidebar h3{font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+.video-item{display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid transparent;margin-bottom:8px;transition:all 0.15s}
+.video-item:hover{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.08)}
+.video-item.active{background:rgba(230,57,70,0.1);border-color:rgba(230,57,70,0.3)}
+.video-thumb{width:72px;height:48px;border-radius:6px;object-fit:cover;background:#1a2a3a;flex-shrink:0}
+.video-info h4{font-size:13px;font-weight:500;line-height:1.4;margin-bottom:3px}
+.video-info p{font-size:11px;color:rgba(255,255,255,0.4)}
+.video-progress{height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:6px}
+.video-progress-bar{height:100%;background:#e63946;border-radius:2px;transition:width 0.3s}
+
+/* WATCH AREA */
+.watch-area{padding:20px}
+.no-video{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:rgba(255,255,255,0.3);gap:12px;font-size:15px}
+.no-video-icon{font-size:48px}
+
+.video-wrapper{position:relative;width:100%;background:#000;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.video-wrapper iframe{display:block;width:100%;aspect-ratio:16/9;border:none}
+
+/* SUBTITLE DISPLAY */
+.subtitle-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:16px;min-height:90px}
+.sub-en{font-size:18px;line-height:1.7;margin-bottom:8px;user-select:text}
+.sub-vi{font-size:14px;color:rgba(255,255,255,0.5);padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)}
+.sub-hint{font-size:12px;color:rgba(255,255,255,0.25);margin-top:4px}
+
+.word-token{cursor:pointer;border-radius:3px;padding:1px 2px;transition:background 0.1s;display:inline}
+.word-token:hover{background:rgba(230,57,70,0.25);color:#ff8a8a}
+.word-token.saved{border-bottom:2px solid rgba(99,153,34,0.7)}
+
+/* TRANSCRIPT SCROLL */
+.transcript-list{margin-top:8px}
+.t-item{display:flex;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px;transition:all 0.15s}
+.t-item:hover{background:rgba(255,255,255,0.04)}
+.t-item.active-line{background:rgba(230,57,70,0.1);border-color:rgba(230,57,70,0.2)}
+.t-time{font-size:11px;color:rgba(255,255,255,0.3);min-width:36px;padding-top:2px}
+.t-text{font-size:13px;line-height:1.5;color:rgba(255,255,255,0.7)}
+.t-item.active-line .t-text{color:#fff}
+
+/* TABS */
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;background:rgba(255,255,255,0.03);padding:4px;border-radius:10px}
+.t-tab{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.t-tab.on{background:rgba(255,255,255,0.08);color:#fff}
+
+.tab-panel{display:none}
+.tab-panel.on{display:block}
+
+/* VOCAB POPUP */
+.popup{position:fixed;background:#1a2535;border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:16px;max-width:300px;min-width:240px;z-index:500;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.popup.show{display:block}
+.p-top{display:flex;justify-content:space-between;align-items:start;margin-bottom:8px}
+.p-word{font-size:20px;font-weight:700;color:#fff}
+.p-close{background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;line-height:1;padding:0}
+.p-meta{display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.p-phonetic{font-size:13px;color:rgba(255,255,255,0.5)}
+.p-type{font-size:11px;background:rgba(230,57,70,0.2);color:#ff8a8a;padding:2px 8px;border-radius:20px}
+.p-meaning{font-size:15px;color:#fff;margin-bottom:8px}
+.p-example{font-size:12px;color:rgba(255,255,255,0.5);line-height:1.5;border-left:2px solid rgba(230,57,70,0.4);padding-left:8px;margin-bottom:12px}
+.p-save-btn{width:100%;padding:9px;border-radius:8px;border:1px solid rgba(99,153,34,0.4);background:rgba(99,153,34,0.1);color:#97c459;font-size:13px;cursor:pointer;font-family:inherit}
+.p-save-btn.saved-state{border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);cursor:default}
+
+/* NOTEBOOK */
+.vocab-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:start}
+.vc-word{font-size:16px;font-weight:600}
+.vc-ph{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:4px}
+.vc-mean{font-size:13px;color:rgba(255,255,255,0.7)}
+.vc-del{background:none;border:none;color:rgba(255,0,0,0.4);cursor:pointer;font-size:18px;padding:0;line-height:1}
+.vc-del:hover{color:rgba(255,0,0,0.8)}
+.empty-state{text-align:center;padding:2rem;color:rgba(255,255,255,0.3);font-size:14px}
+
+/* FLASHCARD */
+.fc-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:1rem 0}
+.fc-card{width:100%;max-width:400px;height:200px;perspective:1000px;cursor:pointer}
+.fc-inner{width:100%;height:100%;transition:transform 0.5s;transform-style:preserve-3d;position:relative}
+.fc-inner.flipped{transform:rotateY(180deg)}
+.fc-front,.fc-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;border:1px solid rgba(255,255,255,0.1)}
+.fc-front{background:rgba(230,57,70,0.15);border-color:rgba(230,57,70,0.3)}
+.fc-back{background:rgba(99,153,34,0.1);border-color:rgba(99,153,34,0.3);transform:rotateY(180deg)}
+.fc-word{font-size:28px;font-weight:700}
+.fc-ph{font-size:14px;color:rgba(255,255,255,0.5)}
+.fc-hint{font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px}
+.fc-mean{font-size:20px;font-weight:500;text-align:center}
+.fc-ex{font-size:12px;color:rgba(255,255,255,0.5);text-align:center;margin-top:4px}
+.fc-nav{display:flex;gap:12px;align-items:center}
+.fc-nav-btn{padding:8px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer;font-family:inherit;font-size:14px}
+.fc-nav-btn:hover{background:rgba(255,255,255,0.08)}
+.fc-counter{font-size:13px;color:rgba(255,255,255,0.4)}
+
+/* QUIZ */
+.quiz-wrap{padding:0.5rem 0}
+.quiz-q{font-size:16px;font-weight:500;margin-bottom:16px;line-height:1.5}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.quiz-opt{padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.8);text-align:left;cursor:pointer;font-size:14px;font-family:inherit;transition:all 0.15s}
+.quiz-opt:hover:not(:disabled){background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.2)}
+.quiz-opt.correct{background:rgba(99,153,34,0.2);border-color:rgba(99,153,34,0.5);color:#97c459}
+.quiz-opt.wrong{background:rgba(230,57,70,0.2);border-color:rgba(230,57,70,0.4);color:#ff8a8a}
+.quiz-score{text-align:center;padding:2rem;background:rgba(255,255,255,0.03);border-radius:12px}
+.quiz-score h3{font-size:24px;margin-bottom:8px}
+.quiz-score p{color:rgba(255,255,255,0.5);font-size:14px;margin-bottom:16px}
+.quiz-restart{padding:10px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;font-family:inherit;font-size:14px}
+.quiz-progress-text{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:12px}
+
+/* LOADING */
+.loading{text-align:center;padding:2rem;color:rgba(255,255,255,0.4);font-size:14px}
+.spin{display:inline-block;animation:spin 1s linear infinite;font-size:20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:640px){
+  .main{flex-direction:column}
+  .sidebar{width:100%;height:auto;max-height:35vh;border-right:none;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .sub-en{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">🎬 EduWatch</div>
+  <div class="nav-right">
+    <span class="nav-student" id="navName">Học sinh</span>
+    <button class="nav-btn" onclick="logout()">Đăng xuất</button>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- SIDEBAR: video list -->
+  <div class="sidebar">
+    <h3>Danh sách video</h3>
+    <div id="videoList"><div class="loading"><span class="spin">⟳</span> Đang tải...</div></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <div class="watch-area">
+      <!-- No video selected -->
+      <div id="noVideo" class="no-video">
+        <div class="no-video-icon">🎥</div>
+        <div>Chọn video bên trái để bắt đầu học</div>
+      </div>
+
+      <!-- Video player area -->
+      <div id="playerArea" style="display:none">
+        <div class="video-wrapper">
+          <div id="ytPlayer"></div>
+        </div>
+
+        <!-- Subtitle box -->
+        <div class="subtitle-box">
+          <div id="subEn" class="sub-en" style="color:rgba(255,255,255,0.3);font-style:italic">Đang chờ video bắt đầu...</div>
+          <div id="subVi" class="sub-vi"></div>
+          <div class="sub-hint">💡 Click vào từ bất kỳ để xem nghĩa — video sẽ tự dừng</div>
+        </div>
+
+        <!-- Tabs: Transcript / Notebook / Flashcard / Quiz -->
+        <div class="tab-bar">
+          <button class="t-tab on" onclick="switchTab('transcript')">📝 Transcript</button>
+          <button class="t-tab" onclick="switchTab('notebook')">📖 Sổ tay</button>
+          <button class="t-tab" onclick="switchTab('flashcard')">🃏 Flashcard</button>
+          <button class="t-tab" onclick="switchTab('quiz')">🧠 Quiz</button>
+        </div>
+
+        <div id="tab-transcript" class="tab-panel on">
+          <div id="transcriptList" class="transcript-list"></div>
+        </div>
+        <div id="tab-notebook" class="tab-panel">
+          <div id="notebookContent"></div>
+        </div>
+        <div id="tab-flashcard" class="tab-panel">
+          <div id="flashcardContent"></div>
+        </div>
+        <div id="tab-quiz" class="tab-panel">
+          <div id="quizContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VOCAB POPUP -->
+<div class="popup" id="vocabPopup">
+  <div class="p-top">
+    <div class="p-word" id="pWord"></div>
+    <button class="p-close" onclick="closePopup()">×</button>
+  </div>
+  <div class="p-meta">
+    <span class="p-phonetic" id="pPhonetic"></span>
+    <span class="p-type" id="pType"></span>
+  </div>
+  <div class="p-meaning" id="pMeaning"></div>
+  <div class="p-example" id="pExample"></div>
+  <button class="p-save-btn" id="pSaveBtn" onclick="saveWord()">💾 Lưu vào sổ tay</button>
+</div>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const SUPABASE_URL = 'https://ybqbweywgkbfidhlcjeh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlicWJ3ZXl3Z2tiZmlkaGxjamVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTU3OTAsImV4cCI6MjA5NjM5MTc5MH0.DD1sJjgbIv82fgLk3SPxpGDg7ENo9jPO0nD63UVKN9g';
+
+// ─── AUTH CHECK ───────────────────────────────────────────
+const student = JSON.parse(localStorage.getItem('ew_student') || 'null');
+if (!student || localStorage.getItem('ew_role') !== 'student') {
+  window.location.href = 'eduwatch.html';
+}
+document.getElementById('navName').textContent = student?.full_name || student?.username || 'Học sinh';
+
+function logout() { localStorage.removeItem('ew_student'); localStorage.removeItem('ew_role'); window.location.href = 'eduwatch.html'; }
+
+// ─── SUPABASE ─────────────────────────────────────────────
+async function sb(table, method='GET', body=null, query='') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : method === 'PATCH' ? 'return=representation' : ''
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(t); }
+  return res.status === 204 ? null : res.json();
+}
+
+// ─── STATE ────────────────────────────────────────────────
+let player = null;
+let playerReady = false;
+let currentVideo = null;
+let transcript = [];
+let currentLineIndex = -1;
+let syncInterval = null;
+let savedWords = [];
+let currentPopupWord = null;
+let currentPopupData = null;
+let quizQuestions = [];
+let quizIndex = 0;
+let quizScore = 0;
+let fcIndex = 0;
+
+// ─── LOAD VIDEOS ──────────────────────────────────────────
+async function loadVideos() {
+  try {
+    const videos = await sb('videos', 'GET', null, '?active=eq.true&order=added_at.desc');
+    renderVideoList(videos || []);
+  } catch(e) {
+    document.getElementById('videoList').innerHTML = '<div class="empty-state">Lỗi tải video</div>';
+  }
+}
+
+async function loadProgress(videoId) {
+  try {
+    const data = await sb('watch_history', 'GET', null, `?student_id=eq.${student.id}&video_id=eq.${videoId}`);
+    return data?.[0]?.progress_pct || 0;
+  } catch { return 0; }
+}
+
+function renderVideoList(videos) {
+  const el = document.getElementById('videoList');
+  if (!videos.length) { el.innerHTML = '<div class="empty-state">Chưa có video nào</div>'; return; }
+  el.innerHTML = videos.map(v => `
+    <div class="video-item" id="vi-${v.id}" onclick="selectVideo(${JSON.stringify(v).replace(/"/g,'&quot;')})">
+      <img class="video-thumb" src="https://img.youtube.com/vi/${v.youtube_id}/mqdefault.jpg" onerror="this.style.background='#1a2a3a'" alt="">
+      <div class="video-info">
+        <h4>${v.title}</h4>
+        <p>${v.level || 'All levels'}</p>
+        <div class="video-progress"><div class="video-progress-bar" id="prog-${v.id}" style="width:0%"></div></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Load progress for each video
+  videos.forEach(async v => {
+    const pct = await loadProgress(v.id);
+    const bar = document.getElementById('prog-'+v.id);
+    if (bar) bar.style.width = pct + '%';
+  });
+}
+
+// ─── SELECT VIDEO ─────────────────────────────────────────
+async function selectVideo(video) {
+  currentVideo = video;
+  transcript = Array.isArray(video.transcript_json) ? video.transcript_json : [];
+  document.getElementById('noVideo').style.display = 'none';
+  document.getElementById('playerArea').style.display = 'block';
+
+  // Mark active
+  document.querySelectorAll('.video-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('vi-'+video.id)?.classList.add('active');
+
+  // Load saved words for this video
+  await loadSavedWords();
+
+  // Init YouTube player
+  initPlayer(video.youtube_id);
+
+  // Render transcript
+  renderTranscript();
+  renderNotebook();
+  renderFlashcard();
+  prepareQuiz();
+}
+
+// ─── YOUTUBE PLAYER ───────────────────────────────────────
+function onYouTubeIframeAPIReady() { /* ready */ }
+
+function initPlayer(ytId) {
+  if (player) { player.loadVideoById(ytId); return; }
+  player = new YT.Player('ytPlayer', {
+    height: '100%', width: '100%',
+    videoId: ytId,
+    playerVars: { rel: 0, modestbranding: 1, cc_load_policy: 0, iv_load_policy: 3 },
+    events: {
+      onReady: () => { playerReady = true; startSync(); },
+      onStateChange: (e) => {
+        if (e.data === YT.PlayerState.PLAYING) startSync();
+        if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) stopSync();
+        if (e.data === YT.PlayerState.ENDED) saveProgress(100);
+      }
+    }
+  });
+}
+
+function startSync() {
+  if (syncInterval) clearInterval(syncInterval);
+  syncInterval = setInterval(() => {
+    if (!player || !playerReady || !transcript.length) return;
+    const t = player.getCurrentTime();
+    const dur = player.getDuration() || 1;
+    saveProgress(Math.round((t/dur)*100));
+    const idx = findLineIndex(t);
+    if (idx !== currentLineIndex) { currentLineIndex = idx; updateSubtitle(idx); }
+  }, 300);
+}
+
+function stopSync() { if (syncInterval) { clearInterval(syncInterval); syncInterval = null; } }
+
+function findLineIndex(t) {
+  for (let i = transcript.length-1; i >= 0; i--) {
+    if (t >= transcript[i].start) return i;
+  }
+  return -1;
+}
+
+function updateSubtitle(idx) {
+  const line = transcript[idx];
+  if (!line) {
+    document.getElementById('subEn').innerHTML = '<span style="color:rgba(255,255,255,0.3);font-style:italic">Đang chờ...</span>';
+    document.getElementById('subVi').textContent = '';
+    return;
+  }
+  document.getElementById('subEn').innerHTML = tokenize(line.en || line.text || '');
+  document.getElementById('subVi').textContent = '🇻🇳 ' + (line.vi || '');
+
+  // Highlight active line in transcript
+  document.querySelectorAll('.t-item').forEach((el,i) => el.classList.toggle('active-line', i===idx));
+  const activeEl = document.querySelector('.t-item.active-line');
+  if (activeEl) activeEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ─── TOKENIZE ─────────────────────────────────────────────
+function tokenize(text) {
+  return text.split(/\b/).map(part => {
+    if (/^[a-zA-Z'-]+$/.test(part)) {
+      const isSaved = savedWords.some(w => w.word.toLowerCase() === part.toLowerCase());
+      return `<span class="word-token${isSaved?' saved':''}" data-w="${part.toLowerCase()}" onclick="lookupWord('${part.toLowerCase()}',event)">${part}</span>`;
+    }
+    return part;
+  }).join('');
+}
+
+// ─── TRANSCRIPT RENDER ────────────────────────────────────
+function renderTranscript() {
+  const el = document.getElementById('transcriptList');
+  if (!transcript.length) { el.innerHTML = '<div class="empty-state">Không có transcript cho video này</div>'; return; }
+  el.innerHTML = transcript.map((line,i) => `
+    <div class="t-item" onclick="seekTo(${line.start})">
+      <span class="t-time">${fmtTime(line.start)}</span>
+      <span class="t-text">${line.en || line.text || ''}</span>
+    </div>
+  `).join('');
+}
+
+function seekTo(t) { if (player && playerReady) { player.seekTo(t); player.playVideo(); } }
+function fmtTime(s) { const m=Math.floor(s/60); return m+':'+String(Math.floor(s%60)).padStart(2,'0'); }
+
+// ─── LOOKUP WORD ──────────────────────────────────────────
+let lookingUp = '';
+async function lookupWord(word, event) {
+  event.stopPropagation();
+  if (player && playerReady) player.pauseVideo();
+  if (word === lookingUp) { closePopup(); return; }
+  lookingUp = word;
+
+  const popup = document.getElementById('vocabPopup');
+  document.getElementById('pWord').textContent = word;
+  document.getElementById('pPhonetic').textContent = '...';
+  document.getElementById('pType').textContent = '';
+  document.getElementById('pMeaning').textContent = 'Đang tra...';
+  document.getElementById('pExample').textContent = '';
+  document.getElementById('pSaveBtn').textContent = '💾 Lưu vào sổ tay';
+  document.getElementById('pSaveBtn').className = 'p-save-btn';
+  positionPopup(event);
+  popup.className = 'popup show';
+
+  const isSaved = savedWords.some(w => w.word.toLowerCase() === word);
+  if (isSaved) {
+    const sw = savedWords.find(w => w.word.toLowerCase() === word);
+    currentPopupData = sw;
+    document.getElementById('pPhonetic').textContent = sw.phonetic || '';
+    document.getElementById('pType').textContent = sw.word_type || '';
+    document.getElementById('pMeaning').textContent = '🇻🇳 ' + sw.meaning;
+    document.getElementById('pExample').textContent = '📝 ' + (sw.example || '');
+    document.getElementById('pSaveBtn').textContent = '✅ Đã lưu';
+    document.getElementById('pSaveBtn').className = 'p-save-btn saved-state';
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6', max_tokens:1000,
+        system:`Bạn là từ điển Anh-Việt dành cho học sinh tiểu học tại Việt Nam. Trả về JSON thuần (không markdown, không backtick):
+{"phonetic":"phiên âm IPA","type":"danh từ/động từ/tính từ/...","meaning":"nghĩa tiếng Việt đơn giản nhất","example":"câu ví dụ tiếng Anh ngắn phù hợp trẻ em 6-12 tuổi"}`,
+        messages:[{role:'user', content:`Giải thích từ tiếng Anh: "${word}"`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '{}';
+    const d = JSON.parse(text.replace(/```json|```/g,'').trim());
+    currentPopupData = { word, phonetic:d.phonetic, word_type:d.type, meaning:d.meaning, example:d.example };
+    document.getElementById('pPhonetic').textContent = d.phonetic || '';
+    document.getElementById('pType').textContent = d.type || '';
+    document.getElementById('pMeaning').textContent = '🇻🇳 ' + (d.meaning || '');
+    document.getElementById('pExample').textContent = '📝 ' + (d.example || '');
+  } catch(e) {
+    document.getElementById('pMeaning').textContent = 'Không thể tra. Thử lại!';
+  }
+}
+
+function positionPopup(event) {
+  const popup = document.getElementById('vocabPopup');
+  const x = event.clientX, y = event.clientY;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let left = x+12, top = y+16;
+  if (left+310 > vw-10) left = x-320;
+  if (top+240 > vh-10) top = y-250;
+  if (left < 8) left = 8;
+  if (top < 8) top = 8;
+  popup.style.left = left+'px'; popup.style.top = top+'px';
+}
+
+function closePopup() { document.getElementById('vocabPopup').className='popup'; lookingUp=''; currentPopupData=null; }
+
+// ─── SAVE WORD ────────────────────────────────────────────
+async function saveWord() {
+  if (!currentPopupData) return;
+  const btn = document.getElementById('pSaveBtn');
+  if (btn.className.includes('saved-state')) return;
+  btn.textContent = 'Đang lưu...'; btn.disabled = true;
+  try {
+    await sb('vocab_saves', 'POST', {
+      student_id: student.id,
+      video_id: currentVideo.id,
+      word: currentPopupData.word,
+      phonetic: currentPopupData.phonetic,
+      word_type: currentPopupData.word_type,
+      meaning: currentPopupData.meaning,
+      example: currentPopupData.example
+    });
+    savedWords.push({ ...currentPopupData });
+    btn.textContent = '✅ Đã lưu!';
+    btn.className = 'p-save-btn saved-state';
+    renderNotebook();
+    renderFlashcard();
+    renderTranscript();
+  } catch(e) {
+    btn.textContent = '❌ Lỗi, thử lại';
+    btn.disabled = false;
+  }
+}
+
+async function loadSavedWords() {
+  try {
+    const data = await sb('vocab_saves','GET',null,`?student_id=eq.${student.id}&video_id=eq.${currentVideo.id}&order=saved_at.desc`);
+    savedWords = data || [];
+  } catch { savedWords = []; }
+}
+
+async function deleteWord(id) {
+  try {
+    await sb('vocab_saves','DELETE',null,`?id=eq.${id}`);
+    savedWords = savedWords.filter(w => w.id !== id);
+    renderNotebook(); renderFlashcard();
+  } catch {}
+}
+
+// ─── NOTEBOOK ─────────────────────────────────────────────
+function renderNotebook() {
+  const el = document.getElementById('notebookContent');
+  if (!savedWords.length) { el.innerHTML = '<div class="empty-state">📖 Chưa có từ nào được lưu.<br>Click vào từ trong sub để tra và lưu!</div>'; return; }
+  el.innerHTML = savedWords.map(w => `
+    <div class="vocab-card">
+      <div>
+        <div class="vc-word">${w.word} <span style="font-size:11px;color:rgba(255,255,255,0.3)">${w.word_type||''}</span></div>
+        <div class="vc-ph">${w.phonetic||''}</div>
+        <div class="vc-mean">${w.meaning||''}</div>
+      </div>
+      <button class="vc-del" onclick="deleteWord('${w.id}')">×</button>
+    </div>
+  `).join('');
+}
+
+// ─── FLASHCARD ────────────────────────────────────────────
+function renderFlashcard() {
+  const el = document.getElementById('flashcardContent');
+  if (!savedWords.length) { el.innerHTML = '<div class="empty-state">🃏 Lưu từ vào sổ tay trước rồi ôn tập tại đây!</div>'; return; }
+  fcIndex = 0;
+  el.innerHTML = `
+    <div class="fc-wrap">
+      <div class="fc-card" onclick="flipCard()">
+        <div class="fc-inner" id="fcInner">
+          <div class="fc-front">
+            <div class="fc-word" id="fcWord"></div>
+            <div class="fc-ph" id="fcPh"></div>
+            <div class="fc-hint">👆 Click để xem nghĩa</div>
+          </div>
+          <div class="fc-back">
+            <div class="fc-mean" id="fcMean"></div>
+            <div class="fc-ex" id="fcEx"></div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-nav">
+        <button class="fc-nav-btn" onclick="fcNav(-1)">← Trước</button>
+        <span class="fc-counter" id="fcCounter"></span>
+        <button class="fc-nav-btn" onclick="fcNav(1)">Sau →</button>
+      </div>
+    </div>
+  `;
+  showFC();
+}
+
+function showFC() {
+  const w = savedWords[fcIndex];
+  document.getElementById('fcWord').textContent = w.word;
+  document.getElementById('fcPh').textContent = w.phonetic || '';
+  document.getElementById('fcMean').textContent = w.meaning || '';
+  document.getElementById('fcEx').textContent = w.example || '';
+  document.getElementById('fcCounter').textContent = `${fcIndex+1} / ${savedWords.length}`;
+  document.getElementById('fcInner').classList.remove('flipped');
+}
+
+function flipCard() { document.getElementById('fcInner').classList.toggle('flipped'); }
+
+function fcNav(dir) {
+  fcIndex = (fcIndex + dir + savedWords.length) % savedWords.length;
+  showFC();
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────
+function prepareQuiz() {
+  const el = document.getElementById('quizContent');
+  el.innerHTML = `<div class="empty-state">
+    <p style="margin-bottom:12px">🧠 Bài quiz sẽ kiểm tra từ vựng trong video này</p>
+    <button onclick="startQuiz()" style="padding:10px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#fff;cursor:pointer;font-family:inherit;font-size:14px">Bắt đầu Quiz</button>
+  </div>`;
+}
+
+async function startQuiz() {
+  const el = document.getElementById('quizContent');
+  el.innerHTML = '<div class="loading"><span class="spin">⟳</span> Đang tạo câu hỏi...</div>';
+
+  // Pick 5 words from transcript or saved
+  let words = savedWords.slice(0,5);
+  if (words.length < 3) {
+    // Pick from transcript
+    const allWords = [...new Set((transcript.map(l=>l.en||l.text||'')).join(' ').toLowerCase().match(/\b[a-z]{4,}\b/g)||[])].slice(0,5);
+    words = allWords.map(w => ({word:w, meaning:''}));
+  }
+
+  try {
+    const wordList = words.map(w=>w.word).join(', ');
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6', max_tokens:1000,
+        system:`Tạo quiz từ vựng tiếng Anh cho học sinh tiểu học. Trả về JSON thuần (không markdown):
+[{"question":"What does '...' mean?","options":["A. ...","B. ...","C. ...","D. ..."],"answer":0,"explanation":"..."}]
+answer là index 0-3 của đáp án đúng trong options.`,
+        messages:[{role:'user',content:`Tạo ${Math.min(words.length,5)} câu hỏi trắc nghiệm tiếng Việt về nghĩa của các từ này: ${wordList}`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text||'[]';
+    quizQuestions = JSON.parse(text.replace(/```json|```/g,'').trim());
+    quizIndex = 0; quizScore = 0;
+    renderQuizQuestion();
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state">Không thể tạo quiz. Thử lại!</div>';
+  }
+}
+
+function renderQuizQuestion() {
+  const el = document.getElementById('quizContent');
+  if (quizIndex >= quizQuestions.length) {
+    const pct = Math.round((quizScore/quizQuestions.length)*100);
+    const emoji = pct>=80?'🎉':pct>=50?'👍':'💪';
+    el.innerHTML = `<div class="quiz-score">
+      <h3>${emoji} ${quizScore}/${quizQuestions.length}</h3>
+      <p>${pct>=80?'Xuất sắc! Bạn nhớ từ rất tốt!':pct>=50?'Tốt lắm! Cố gắng hơn nhé!':'Ôn thêm từ vựng rồi thử lại nhé!'}</p>
+      <button class="quiz-restart" onclick="startQuiz()">Làm lại Quiz</button>
+    </div>`;
+    saveQuizResult();
+    return;
+  }
+  const q = quizQuestions[quizIndex];
+  el.innerHTML = `
+    <div class="quiz-wrap">
+      <div class="quiz-progress-text">Câu ${quizIndex+1} / ${quizQuestions.length}</div>
+      <div class="quiz-q">${q.question}</div>
+      <div class="quiz-opts">
+        ${q.options.map((opt,i)=>`<button class="quiz-opt" onclick="answerQuiz(${i})">${opt}</button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function answerQuiz(chosen) {
+  const q = quizQuestions[quizIndex];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach(o=>o.disabled=true);
+  opts[q.answer].classList.add('correct');
+  if (chosen !== q.answer) opts[chosen].classList.add('wrong');
+  else quizScore++;
+  setTimeout(() => { quizIndex++; renderQuizQuestion(); }, 1200);
+}
+
+async function saveQuizResult() {
+  try {
+    await sb('quiz_results','POST',{
+      student_id: student.id, video_id: currentVideo.id,
+      score: quizScore, total: quizQuestions.length,
+      answers: quizQuestions
+    });
+  } catch {}
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────
+let lastSaved = 0;
+async function saveProgress(pct) {
+  if (Math.abs(pct-lastSaved) < 5) return;
+  lastSaved = pct;
+  try {
+    await sb('watch_history','POST',{
+      student_id:student.id, video_id:currentVideo.id,
+      progress_pct:pct, completed:pct>=95, last_watched:new Date().toISOString()
+    },'');
+    // Upsert manually since Supabase needs ON CONFLICT
+    const bar = document.getElementById('prog-'+currentVideo.id);
+    if (bar) bar.style.width = pct+'%';
+  } catch {}
+}
+
+// ─── TABS ─────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.t-tab').forEach((t,i)=>t.classList.toggle('on',['transcript','notebook','flashcard','quiz'][i]===name));
+  ['transcript','notebook','flashcard','quiz'].forEach(n=>{
+    document.getElementById('tab-'+n).classList.toggle('on',n===name);
+  });
+  if (name==='notebook') renderNotebook();
+  if (name==='flashcard') renderFlashcard();
+  if (name==='quiz') prepareQuiz();
+}
+
+// ─── CLOSE POPUP ON OUTSIDE CLICK ─────────────────────────
+document.addEventListener('click', e => {
+  if (!e.target.closest('.popup') && !e.target.classList.contains('word-token')) closePopup();
+});
+
+// ─── INIT ─────────────────────────────────────────────────
+loadVideos();
+</script>
+</body>
+</html>
