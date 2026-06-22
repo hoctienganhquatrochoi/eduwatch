@@ -39,7 +39,6 @@
   }
   .logo h1 { color: #fff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
   .logo p { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 4px; }
-
   .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
   .tab {
     flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
@@ -47,7 +46,6 @@
     cursor: pointer; transition: all 0.2s; font-family: inherit;
   }
   .tab.active { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
-
   .form-group { margin-bottom: 1rem; }
   label { display: block; color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 6px; letter-spacing: 0.5px; }
   input {
@@ -58,7 +56,13 @@
   }
   input::placeholder { color: rgba(255,255,255,0.25); }
   input:focus { border-color: rgba(230,57,70,0.6); background: rgba(255,255,255,0.08); }
-
+  .pass-wrap { position: relative; }
+  .pass-wrap input { padding-right: 48px; }
+  .toggle-pass {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px;
+    color: rgba(255,255,255,0.5);
+  }
   .btn {
     width: 100%; padding: 13px; border-radius: 10px; border: none;
     background: linear-gradient(135deg, #e63946, #c1121f);
@@ -69,16 +73,13 @@
   .btn:hover { opacity: 0.9; }
   .btn:active { transform: scale(0.98); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .error {
     background: rgba(230,57,70,0.15); border: 1px solid rgba(230,57,70,0.3);
     color: #ff8a8a; padding: 10px 14px; border-radius: 8px;
-    font-size: 13px; margin-top: 0.75rem; display: none;
+    font-size: 13px; margin-top: 0.75rem; display: none; word-break: break-all;
   }
   .error.show { display: block; }
-
   .footer { text-align: center; margin-top: 1.5rem; color: rgba(255,255,255,0.25); font-size: 12px; }
-
   .panel { display: none; }
   .panel.active { display: block; }
 </style>
@@ -105,7 +106,10 @@
     </div>
     <div class="form-group">
       <label>MẬT KHẨU</label>
-      <input id="stuPass" type="password" placeholder="Nhập mật khẩu..." />
+      <div class="pass-wrap">
+        <input id="stuPass" type="password" placeholder="Nhập mật khẩu..." />
+        <button class="toggle-pass" onclick="togglePass('stuPass','stuToggle')" id="stuToggle">👁️</button>
+      </div>
     </div>
     <button class="btn" id="stuBtn" onclick="loginStudent()">Đăng nhập</button>
     <div class="error" id="stuErr"></div>
@@ -115,7 +119,10 @@
   <div id="adminPanel" class="panel">
     <div class="form-group">
       <label>MẬT KHẨU ADMIN</label>
-      <input id="adminPass" type="password" placeholder="Nhập mật khẩu admin..." />
+      <div class="pass-wrap">
+        <input id="adminPass" type="password" placeholder="Nhập mật khẩu admin..." />
+        <button class="toggle-pass" onclick="togglePass('adminPass','adminToggle')" id="adminToggle">👁️</button>
+      </div>
     </div>
     <button class="btn" id="adminBtn" onclick="loginAdmin()">Đăng nhập Admin</button>
     <div class="error" id="adminErr"></div>
@@ -149,9 +156,16 @@ function switchTab(tab) {
   document.getElementById('adminPanel').classList.toggle('active', tab==='admin');
 }
 
+function togglePass(inputId, btnId) {
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁️'; }
+}
+
 async function loginStudent() {
   const user = document.getElementById('stuUser').value.trim();
-  const pass = document.getElementById('stuPass').value.trim();
+  const pass = document.getElementById('stuPass').value;
   const err = document.getElementById('stuErr');
   const btn = document.getElementById('stuBtn');
   if (!user || !pass) { showErr(err, 'Vui lòng nhập đầy đủ thông tin!'); return; }
@@ -159,34 +173,36 @@ async function loginStudent() {
   try {
     const data = await sb('students', 'GET', null, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&active=eq.true&select=id,full_name,username`);
     if (!data || data.length === 0) { showErr(err, 'Sai tên đăng nhập hoặc mật khẩu!'); return; }
-    const student = data[0];
-    localStorage.setItem('ew_student', JSON.stringify(student));
+    localStorage.setItem('ew_student', JSON.stringify(data[0]));
     localStorage.setItem('ew_role', 'student');
     window.location.href = 'student.html';
-  } catch(e) { showErr(err, 'Lỗi kết nối. Thử lại!'); }
+  } catch(e) { showErr(err, 'Lỗi kết nối: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = 'Đăng nhập'; }
 }
 
 async function loginAdmin() {
-  const pass = document.getElementById('adminPass').value.trim();
+  const pass = document.getElementById('adminPass').value;
   const err = document.getElementById('adminErr');
   const btn = document.getElementById('adminBtn');
   if (!pass) { showErr(err, 'Nhập mật khẩu admin!'); return; }
   btn.disabled = true; btn.textContent = 'Đang kiểm tra...';
   try {
-    const data = await sb('app_settings', 'GET', null, `?key=eq.admin_password`);
-    if (!data || data[0]?.value !== pass) { showErr(err, 'Mật khẩu admin không đúng!'); return; }
+    const data = await sb('app_settings', 'GET', null, '?key=eq.admin_password');
+    const stored = data?.[0]?.value || '';
+    if (stored !== pass) {
+      showErr(err, 'Sai! DB có: [' + stored + '] — bạn nhập: [' + pass + ']');
+      return;
+    }
     localStorage.setItem('ew_role', 'admin');
     window.location.href = 'admin.html';
-  } catch(e) { showErr(err, 'Lỗi kết nối. Thử lại!'); }
+  } catch(e) { showErr(err, 'Lỗi kết nối: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = 'Đăng nhập Admin'; }
 }
 
-function showErr(el, msg) { el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 4000); }
+function showErr(el, msg) { el.textContent = msg; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 8000); }
 
-document.addEventListener('keydown', e => { if (e.key === 'Enter') { document.querySelector('.panel.active .btn').click(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Enter') document.querySelector('.panel.active .btn').click(); });
 
-// Auto redirect if already logged in
 if (localStorage.getItem('ew_role') === 'student') window.location.href = 'student.html';
 if (localStorage.getItem('ew_role') === 'admin') window.location.href = 'admin.html';
 </script>
